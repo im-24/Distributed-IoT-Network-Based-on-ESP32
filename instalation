@@ -1,0 +1,10 @@
+=================================={HELLO WORLD}=================================
+
+1-install drivers CP210X OR CH340
+2-install platformIO IDE extention on vs code / C/C++ AND CLANG-FORMAT
+3-IN SETTINGS of vs code format ->default formater : clang-format
+format on past : on , format on save : on , format on type : on 
+4- open project press the boot botton while implimenting and test the functionnality
+
+================================={CONNECTION }==================================
+
