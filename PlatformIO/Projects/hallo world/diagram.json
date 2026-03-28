@@ -3,14 +3,11 @@
   "author": "ikram24",
   "editor": "wokwi",
   "parts": [
-    {
-      "type": "board-esp32-s3-devkitc-1",
-      "id": "esp",
-      "top": -48.18,
-      "left": -33.83,
-      "attrs": {}
-    }
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp1", "top": 0, "left": 0 },
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp2", "top": 0, "left": 100 },
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp3", "top": 0, "left": 200 }
   ],
+ 
   "connections": [ [ "esp:TX", "$serialMonitor:RX", "", [] ], [ "esp:RX", "$serialMonitor:TX", "", [] ] ],
   "dependencies": {}
 }
