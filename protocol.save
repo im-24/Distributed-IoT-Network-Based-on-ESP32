@@ -1,0 +1,37 @@
+linking esp32 : esp-now
+=====================================fix model =================================
+ms : main server 
+
+choose one root only
+the mac address are initialy known 
+initialization using wifi script // wire communication
+each additionnal address is delevred by the server to all nodes
+the reboot removes the mac that is stored in the ram => each esp have a starting
+configuration script in lunch the configurantion is only changeble from the ms
+start scripts are broadcasts
+for the security : use authontification to reset the start script 
+
+protocol : 
+
+
+
+-----------+
+app        |
+-----------+
+transport  |
+-----------+
+esp-now    |
+-----------+
+
+
+
+communication :
+the data flow must be tcp 
+
+
+=====================================mobile model ==============================
+in-net table that shows all the reacheble esp 
+rip protocol 
+
+if there is need for the communication set highest inturupt and send mesge with 
+the known root 

@@ -1,17 +1,17 @@
 #include <Arduino.h>
-
+#include <WifiEspNow.h>
+#include <WiFi.h>
 
 void setup() {
-  pinMode(LED_BUILTIN,OUTPUT);
-  Serial1.begin(921600);
-  Serial.println("\nhallo world");
+  
+  Serial.begin(115200);
+  WiFi.mode(WIFI_MODE_STA);
+  Serial.println("hello esp32");
+  Serial.print("MAC Address:");
+  Serial.println(WiFi.macAddress());
 }
 
 void loop() {
-  delay(1000);
-  digitalWrite(LED_BUILTIN, HIGH);
-  Serial1.println("\nthe light is on");
-  delay(1000);
-  digitalWrite(LED_BUILTIN, LOW);
-  Serial.println("\nthe light is off");
+
+
 }
