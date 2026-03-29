@@ -1,8 +1,8 @@
 [wokwi]
 version = 1
-firmware = 'path-to-your-firmware.hex'
-elf = 'path-to-your-firmware.elf'
+firmware = ' .pio/build/freenove_esp32_s3_wroom/firmware.bin'
+elf = ' .pio/build/freenove_esp32_s3_wroom/firmware.elf'
 
 [[chip]]
-name = node
-binary = ''
+name = 'node'
+binary = '.pio/build/nodeMCU/firmware.bin'
