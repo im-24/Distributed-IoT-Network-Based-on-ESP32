@@ -3,9 +3,11 @@
   "author": "ikram24",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-esp32-s3-devkitc-1", "id": "server", "top": 0, "left": 0, "attrs": { "mac": "24:6F:28:7A:AE:7C"} }
+    { "type": "board-esp32-s3-devkitc-1", "id": "server", "top": 100, "left": 200, "attrs": { "mac": "24:6F:28:7A:AE:7C"} },
+    { "type": "board-esp32-s3-devkitc-1", "id": "node", "top": 0, "left": 0, "attrs": { "mac": "24:6F:28:7A:AE:0C"} }
   ],
-  "connections": [ [ "server:TX", "$serialMonitor:RX", "", [] ], [ "server:RX", "$serialMonitor:TX", "", [] ] 
+  "connections": [ [ "server:TX", "$serialMonitor:RX", "", [] ], [ "server:RX", "$serialMonitor:TX", "", [] ] ,
+  [ "node:TX", "$serialMonitor2:RX", "", [] ], [ "node:RX", "$serialMonitor2:TX", "", [] ] 
   ],
   "dependencies": {}
 }
