@@ -3,7 +3,7 @@
   "author": "ikram24",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-esp32-devkit-c-v4", "id": "node", "top": 400, "left": 100, "attrs": {} }
+    { "type": "board-esp32-devkit-c-v4", "id": "node", "top": 400, "left": 100, "attrs": {"mac": "24:6F:28:7A:AE:0C"} }
   ],
   "connections": [   [ "node:TX", "$serialMonitor:RX", "", [] ], [ "node:RX", "$serialMonitor:TX", "", [] ]
   ],
