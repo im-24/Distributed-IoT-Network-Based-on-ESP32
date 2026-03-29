@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "author": "ikram24",
+  "editor": "wokwi",
+  "parts": [
+    {"type": "board-esp32-s3-devkitc-1","id": "server","top": 0,"left": 0,"attrs": {"mac": "24:62:AB:01:00:20" ,"code": "server.cpp"}},
+    {"type": "board-esp32-s3-devkitc-1","id": "node1","top": 300,"left": -300,"attrs":{"mac": "24:62:AB:01:00:10","code": "node.cpp"}},
+    {"type": "board-esp32-s3-devkitc-1","id": "node2","top": 200,"left": 500,"attrs":{"mac": "24:62:AB:01:00:02","code": "node.cpp"}}
+      ],
+  "connections": [
+    [ "server:TX", "$serialMonitor:RX", "", [] ], ["server:RX", "$serialMonitor:TX", "", [] ],
+    ["node1:RX", "$serialMonitor2:TX", "", [] ],["node1:TX","$serialMonitor2:RX",""],
+    ["node2:RX", "$serialMonitor3:TX", "", [] ],["node2:TX","$serialMonitor3:RX",""]
+  ],
+  "dependencies": {}
+}
