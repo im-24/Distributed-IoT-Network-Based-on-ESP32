@@ -1,14 +1,11 @@
 /* ESP32 HTTP IoT Server - Dashboard Température et Humidité
-   Basé sur l'exemple original pour Wokwi.com
-   Compatible PlatformIO + Wokwi
-   Accès : http://localhost:8180 (avec wokwi.toml)
+   Version avec valeurs simulées pour test
 */
 
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <uri/UriBraces.h>
-#include <DHT.h>
 
 #define WIFI_SSID "Wokwi-GUEST"
 #define WIFI_PASSWORD ""
@@ -16,17 +13,12 @@
 
 WebServer server(80);
 
-// === Configuration du capteur DHT22 ===
-#define DHTPIN 15
-#define DHTTYPE DHT22
-DHT dht(DHTPIN, DHTTYPE);
+// Variables pour les données simulées
+float temperature = 22.5;
+float humidity = 65.0;
+unsigned long lastUpdate = 0;
 
-// === Variables globales ===
-float temperature = 0;
-float humidity = 0;
-unsigned long lastSensorRead = 0;
-
-// === Page HTML (dashboard) ===
+// Page HTML du dashboard
 void sendHtml() {
   String response = R"(
     <!DOCTYPE html><html>
@@ -36,50 +28,66 @@ void sendHtml() {
         <style>
           html { font-family: sans-serif; text-align: center; }
           body { display: inline-flex; flex-direction: column; align-items: center; }
-          h1 { margin-bottom: 1.2em; }
+          h1 { margin-bottom: 1.2em; color: #333; }
           .card {
-            background: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 20px;
             padding: 2em;
             margin: 1em;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 300px;
           }
-          .temp { font-size: 3em; color: #e67e22; }
-          .hum { font-size: 2.5em; color: #2980b9; }
-          .btn { background-color: #5B5; border: none; color: #fff; padding: 0.5em 1em;
-                 font-size: 1.2em; text-decoration: none; border-radius: 8px; }
-          .update { margin-top: 2em; font-size: 0.8em; color: #666; }
+          .temp { font-size: 3.5em; font-weight: bold; color: #ff6b6b; margin: 20px 0; }
+          .hum { font-size: 3em; font-weight: bold; color: #4ecdc4; margin: 20px 0; }
+          .label { font-size: 1.2em; color: white; margin-bottom: 10px; }
+          .icon { font-size: 2.5em; }
+          .update { margin-top: 2em; font-size: 0.9em; color: white; }
+          .status {
+            background: #4caf50;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 0.9em;
+          }
         </style>
         <script>
           function fetchData() {
             fetch('/data')
               .then(response => response.json())
               .then(data => {
-                document.getElementById('temp').innerHTML = data.temperature + ' °C';
-                document.getElementById('hum').innerHTML = data.humidity + ' %';
+                document.getElementById('temp').innerHTML = data.temperature.toFixed(1) + ' °C';
+                document.getElementById('hum').innerHTML = data.humidity.toFixed(1) + ' %';
                 document.getElementById('time').innerHTML = new Date().toLocaleTimeString();
+                document.getElementById('status').innerHTML = 'En ligne';
               })
-              .catch(err => console.log(err));
+              .catch(err => {
+                console.log(err);
+                document.getElementById('status').innerHTML = ' Erreur';
+              });
           }
           setInterval(fetchData, 2000);
           fetchData();
         </script>
       </head>
       <body>
-        <h1>🌡️ Dashboard IoT ESP32</h1>
+        <h1>Dashboard IoT ESP32</h1>
         <div class="card">
-          <div class="temp">--.- °C</div>
-          <div class="hum">--.- %</div>
-          <div class="update">Dernière mise à jour : <span id="time">--:--:--</span></div>
+          <div class="label">Temperature</div>
+          <div class="temp" id="temp">--.- °C</div>
+          <div class="label">Humidite</div>
+          <div class="hum" id="hum">--.- %</div>
+          <div class="status" id="status"> En ligne</div>
+          <div class="update">last update : <span id="time">--:--:--</span></div>
         </div>
-        <a href="/" class="btn">↻ Rafraîchir</a>
       </body>
     </html>
   )";
   server.send(200, "text/html", response);
 }
 
-// === Route pour les données JSON ===
+// Route pour les données JSON
 void sendJson() {
   String json = "{";
   json += "\"temperature\": " + String(temperature) + ",";
@@ -88,63 +96,65 @@ void sendJson() {
   server.send(200, "application/json", json);
 }
 
-// === Lecture du capteur ===
-void readSensor() {
-  float h = dht.readHumidity();
-  float t = dht.readTemperature();
-
-  if (isnan(h) || isnan(t)) {
-    Serial.println("❌ Erreur lecture DHT22");
-    return;
-  }
-
-  temperature = t;
-  humidity = h;
-
-  Serial.print("🌡️ Température: ");
+// Génération de valeurs simulées
+void generateSimulatedData() {
+  // Valeurs qui varient lentement entre 18-28°C et 40-80%
+  static float trend = 0;
+  trend += 0.1;
+  
+  temperature = 23.0 + sin(trend) * 3.0;
+  humidity = 60.0 + cos(trend * 0.8) * 15.0;
+  
+  Serial.print(" Température simulée: ");
   Serial.print(temperature);
-  Serial.print(" °C  💧 Humidité: ");
+  Serial.print(" °C   Humidité: ");
   Serial.print(humidity);
   Serial.println(" %");
 }
 
 void setup(void) {
   Serial.begin(115200);
-  dht.begin();
-
-  // Connexion WiFi (identique au code original)
+  delay(1000);
+  
+  Serial.println("\n\n=== DÉMARRAGE ESP32 ===");
+  
+  // Connexion WiFi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL);
-  Serial.print("Connecting to WiFi ");
+  Serial.print("Connexion au WiFi ");
   Serial.print(WIFI_SSID);
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(100);
     Serial.print(".");
   }
-  Serial.println(" Connected!");
-
-  Serial.print("IP address: ");
+  
+  Serial.println(" Connecté!");
+  Serial.print("Adresse IP: ");
   Serial.println(WiFi.localIP());
-
-  // === Routes conservées ===
+  
+  // Configuration des routes
   server.on("/", sendHtml);
   server.on("/data", sendJson);
-
+  
+  // Démarrage du serveur
   server.begin();
-  Serial.println("HTTP server started (http://localhost:8180)");
-
-  // Lecture initiale
-  delay(2000);
-  readSensor();
+  Serial.println("Serveur HTTP démarré");
+  Serial.println("\n=== PRÊT ===");
+  Serial.println("Ouvrez votre navigateur à: http://localhost:8180");
+  Serial.println("Dashboard disponible\n");
+  
+  // Première génération
+  generateSimulatedData();
 }
 
 void loop(void) {
   server.handleClient();
-
-  // Lecture toutes les 3 secondes
-  if (millis() - lastSensorRead >= 3000) {
-    readSensor();
-    lastSensorRead = millis();
+  
+  // Mise à jour toutes les 3 secondes
+  if (millis() - lastUpdate >= 3000) {
+    generateSimulatedData();
+    lastUpdate = millis();
   }
-
+  
   delay(2);
 }
