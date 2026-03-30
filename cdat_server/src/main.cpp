@@ -1,253 +1,150 @@
+/* ESP32 HTTP IoT Server - Dashboard Température et Humidité
+   Basé sur l'exemple original pour Wokwi.com
+   Compatible PlatformIO + Wokwi
+   Accès : http://localhost:8180 (avec wokwi.toml)
+*/
+
 #include <WiFi.h>
+#include <WiFiClient.h>
 #include <WebServer.h>
+#include <uri/UriBraces.h>
 #include <DHT.h>
 
-// ==================== CONFIGURATION ====================
 #define WIFI_SSID "Wokwi-GUEST"
 #define WIFI_PASSWORD ""
+#define WIFI_CHANNEL 6
 
+WebServer server(80);
+
+// === Configuration du capteur DHT22 ===
 #define DHTPIN 15
 #define DHTTYPE DHT22
-
-// ==================== OBJETS ====================
-WebServer server(80);
 DHT dht(DHTPIN, DHTTYPE);
 
-// ==================== PAGE HTML ====================
-const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard IoT ESP32</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        h1 {
-            color: white;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2rem;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
-        }
-        
-        .sensor-card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .temp {
-            font-size: 4rem;
-            font-weight: bold;
-            color: #ff6b6b;
-            margin: 20px 0;
-        }
-        
-        .hum {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #4ecdc4;
-            margin: 20px 0;
-        }
-        
-        .label {
-            font-size: 1.2rem;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        
-        .icon {
-            font-size: 3rem;
-        }
-        
-        .update-time {
-            text-align: center;
-            color: white;
-            margin-top: 20px;
-            font-size: 0.9rem;
-        }
-        
-        .status {
-            background: #4caf50;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            display: inline-block;
-            margin-top: 20px;
-        }
-        
-        @media (max-width: 768px) {
-            h1 { font-size: 1.5rem; }
-            .temp { font-size: 2.5rem; }
-            .hum { font-size: 2rem; }
-            .icon { font-size: 2rem; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🌡️ Dashboard IoT ESP32</h1>
-        
-        <div class="sensor-card">
-            <div class="icon">🌡️</div>
-            <div class="label">Température</div>
-            <div class="temp" id="temperature">--.- °C</div>
-            
-            <div class="icon">💧</div>
-            <div class="label">Humidité</div>
-            <div class="hum" id="humidity">--.- %</div>
-            
-            <div class="status" id="status">🟢 En ligne</div>
-        </div>
-        
-        <div class="update-time">
-            Dernière mise à jour: <span id="updateTime">--:--:--</span>
-        </div>
-    </div>
-
-    <script>
-        function fetchData() {
-            fetch('/data')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('temperature').innerHTML = data.temperature + ' °C';
-                    document.getElementById('humidity').innerHTML = data.humidity + ' %';
-                    
-                    const now = new Date();
-                    document.getElementById('updateTime').innerHTML = now.toLocaleTimeString();
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    document.getElementById('status').innerHTML = '🔴 Erreur de connexion';
-                });
-        }
-        
-        // Chargement initial
-        fetchData();
-        
-        // Mise à jour toutes les 2 secondes
-        setInterval(fetchData, 2000);
-    </script>
-</body>
-</html>
-)rawliteral";
-
-// ==================== VARIABLES ====================
+// === Variables globales ===
 float temperature = 0;
 float humidity = 0;
-unsigned long lastRead = 0;
+unsigned long lastSensorRead = 0;
 
-// ==================== LECTURE CAPTEUR ====================
-void readSensor() {
-  // Lecture du capteur DHT22
-  humidity = dht.readHumidity();
-  temperature = dht.readTemperature();
-  
-  // Vérifier si la lecture est valide
-  if (isnan(humidity) || isnan(temperature)) {
-    Serial.println("Erreur de lecture du capteur");
-    temperature = 0;
-    humidity = 0;
-  } else {
-    Serial.print("Température: ");
-    Serial.print(temperature);
-    Serial.print(" °C, Humidité: ");
-    Serial.print(humidity);
-    Serial.println(" %");
-  }
+// === Page HTML (dashboard) ===
+void sendHtml() {
+  String response = R"(
+    <!DOCTYPE html><html>
+      <head>
+        <title>ESP32 IoT Dashboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          html { font-family: sans-serif; text-align: center; }
+          body { display: inline-flex; flex-direction: column; align-items: center; }
+          h1 { margin-bottom: 1.2em; }
+          .card {
+            background: #f5f5f5;
+            border-radius: 20px;
+            padding: 2em;
+            margin: 1em;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          }
+          .temp { font-size: 3em; color: #e67e22; }
+          .hum { font-size: 2.5em; color: #2980b9; }
+          .btn { background-color: #5B5; border: none; color: #fff; padding: 0.5em 1em;
+                 font-size: 1.2em; text-decoration: none; border-radius: 8px; }
+          .update { margin-top: 2em; font-size: 0.8em; color: #666; }
+        </style>
+        <script>
+          function fetchData() {
+            fetch('/data')
+              .then(response => response.json())
+              .then(data => {
+                document.getElementById('temp').innerHTML = data.temperature + ' °C';
+                document.getElementById('hum').innerHTML = data.humidity + ' %';
+                document.getElementById('time').innerHTML = new Date().toLocaleTimeString();
+              })
+              .catch(err => console.log(err));
+          }
+          setInterval(fetchData, 2000);
+          fetchData();
+        </script>
+      </head>
+      <body>
+        <h1>🌡️ Dashboard IoT ESP32</h1>
+        <div class="card">
+          <div class="temp">--.- °C</div>
+          <div class="hum">--.- %</div>
+          <div class="update">Dernière mise à jour : <span id="time">--:--:--</span></div>
+        </div>
+        <a href="/" class="btn">↻ Rafraîchir</a>
+      </body>
+    </html>
+  )";
+  server.send(200, "text/html", response);
 }
 
-// ==================== ROUTES SERVEUR ====================
-void handleRoot() {
-  server.send(200, "text/html", index_html);
-}
-
-void handleData() {
-  // Créer la réponse JSON manuellement
+// === Route pour les données JSON ===
+void sendJson() {
   String json = "{";
   json += "\"temperature\": " + String(temperature) + ",";
   json += "\"humidity\": " + String(humidity);
   json += "}";
-  
   server.send(200, "application/json", json);
 }
 
-// ==================== SETUP ====================
-void setup() {
+// === Lecture du capteur ===
+void readSensor() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  if (isnan(h) || isnan(t)) {
+    Serial.println("❌ Erreur lecture DHT22");
+    return;
+  }
+
+  temperature = t;
+  humidity = h;
+
+  Serial.print("🌡️ Température: ");
+  Serial.print(temperature);
+  Serial.print(" °C  💧 Humidité: ");
+  Serial.print(humidity);
+  Serial.println(" %");
+}
+
+void setup(void) {
   Serial.begin(115200);
-  delay(1000);
-  
-  Serial.println("\n\n=== DÉMARRAGE ESP32 ===");
-  
-  // Initialisation du capteur
   dht.begin();
-  Serial.println("Capteur DHT22 initialisé");
-  
-  // Connexion WiFi
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  
-  Serial.print("Connexion au WiFi");
+
+  // Connexion WiFi (identique au code original)
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL);
+  Serial.print("Connecting to WiFi ");
+  Serial.print(WIFI_SSID);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(100);
     Serial.print(".");
   }
-  
-  Serial.println("\nWiFi connecté !");
-  Serial.print("Adresse IP: ");
+  Serial.println(" Connected!");
+
+  Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-  
-  // Configuration du serveur web
-  server.on("/", handleRoot);
-  server.on("/data", handleData);
+
+  // === Routes conservées ===
+  server.on("/", sendHtml);
+  server.on("/data", sendJson);
+
   server.begin();
-  
-  Serial.println("Serveur web démarré");
-  Serial.println("\n=== PRÊT ===");
-  Serial.print("Ouvrez votre navigateur à: http://");
-  Serial.println(WiFi.localIP());
-  
-  // Première lecture
+  Serial.println("HTTP server started (http://localhost:8180)");
+
+  // Lecture initiale
+  delay(2000);
   readSensor();
 }
 
-// ==================== LOOP ====================
-void loop() {
-  // Gérer les requêtes web
+void loop(void) {
   server.handleClient();
-  
-  // Lire le capteur toutes les 3 secondes
-  if (millis() - lastRead >= 3000) {
+
+  // Lecture toutes les 3 secondes
+  if (millis() - lastSensorRead >= 3000) {
     readSensor();
-    lastRead = millis();
+    lastSensorRead = millis();
   }
-  
-  delay(10);
+
+  delay(2);
 }
