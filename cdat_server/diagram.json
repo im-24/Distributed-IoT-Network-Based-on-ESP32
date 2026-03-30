@@ -1,13 +1,17 @@
 {
   "version": 1,
-  "author": "ikram24",
+  "author": "Uri Shaked",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-esp32-s3-devkitc-1", "id": "server", "top": 100, "left": 200, "attrs": { "mac": "24:6F:28:7A:AE:7C"} },
-    { "type": "board-esp32-s3-devkitc-1", "id": "node", "top": 0, "left": 0, "attrs": { "mac": "24:6F:28:7A:AE:0C"} }
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 4.8, "left": -33.56, "attrs": {} },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -28.5, "left": -120.6, "attrs": {} }
   ],
-  "connections": [ [ "server:TX", "$serialMonitor:RX", "", [] ], [ "server:RX", "$serialMonitor:TX", "", [] ] ,
-  [ "node:TX", "$serialMonitor2:RX", "", [] ], [ "node:RX", "$serialMonitor2:TX", "", [] ] 
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "dht1:GND", "esp:GND.2", "black", [ "v9.6", "h38.4", "v-105.6", "h153.6" ] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "esp:15", "dht1:SDA", "green", [ "v-52.8", "h-163.2" ] ]
   ],
   "dependencies": {}
 }
