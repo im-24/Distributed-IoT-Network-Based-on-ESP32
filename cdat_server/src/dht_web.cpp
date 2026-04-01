@@ -6,10 +6,19 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <uri/UriBraces.h>
-
+#include "DHT.h"
 #define WIFI_SSID "Wokwi-GUEST"
 #define WIFI_PASSWORD ""
 #define WIFI_CHANNEL 6
+
+
+
+#define DHTPIN 15 // Digital pin connected to the DATA pin
+#define DHTTYPE DHT22   // Use DHT22 if you have a DHT22
+
+DHT dht(DHTPIN, DHTTYPE);
+
+
 
 WebServer server(80);
 
@@ -96,21 +105,6 @@ void sendJson() {
   server.send(200, "application/json", json);
 }
 
-// Génération de valeurs simulées
-void generateSimulatedData() {
-  // Valeurs qui varient lentement entre 18-28°C et 40-80%
-  static float trend = 0;
-  trend += 0.1;
-  
-  temperature = 23.0 + sin(trend) * 3.0;
-  humidity = 60.0 + cos(trend * 0.8) * 15.0;
-  
-  Serial.print(" Température simulée: ");
-  Serial.print(temperature);
-  Serial.print(" °C   Humidité: ");
-  Serial.print(humidity);
-  Serial.println(" %");
-}
 
 void setup(void) {
   Serial.begin(115200);
@@ -143,18 +137,24 @@ void setup(void) {
   Serial.println("Ouvrez votre navigateur à: http://localhost:8180");
   Serial.println("Dashboard disponible\n");
   
-  // Première génération
-  generateSimulatedData();
 }
 
 void loop(void) {
   server.handleClient();
   
-  // Mise à jour toutes les 3 secondes
-  if (millis() - lastUpdate >= 3000) {
-    generateSimulatedData();
+  // Mise à jour toutes les 1 secondes
+  if (millis() - lastUpdate >= 1000) {
+    humidity = dht.readHumidity();
+    temperature = dht.readTemperature(); //
     lastUpdate = millis();
+    Serial.print(" Température simulée: ");
+    Serial.print(temperature);
+    Serial.print(" °C   Humidité: ");
+    Serial.print(humidity);
+    Serial.println(" %/////");
+
+ Serial.println(lastUpdate);
   }
-  
+ 
   delay(2);
 }
